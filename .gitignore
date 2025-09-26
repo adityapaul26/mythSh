@@ -1,0 +1,28 @@
+# Compiled object files
+*.o
+
+# Compiled binary
+/build
+
+# Backup files
+*~
+*.bak
+
+# Temporary files
+*.tmp
+
+# Editor-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+
+# Logs
+*.log
+
+# Core dumps
+core
+
+# qodo
+.qodo
