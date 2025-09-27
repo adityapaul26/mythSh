@@ -1,0 +1,12 @@
+[
+  {
+    "directory": "/home/aditya/code/mythSh",
+    "command": "gcc -Wall -Wextra -Iinclude -c src/mythSh.c -o src/mythSh.o",
+    "file": "src/mythSh.c"
+  },
+  {
+    "directory": "/home/aditya/code/mythSh", 
+    "command": "gcc -Wall -Wextra -Iinclude -c src/todo.c -o src/todo.o",
+    "file": "src/todo.c"
+  }
+]
