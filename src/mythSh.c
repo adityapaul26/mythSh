@@ -3,7 +3,8 @@
 #include <string.h>    
 #include <sys/types.h> 
 #include <sys/wait.h>
-#include <unistd.h> // for fork, execvp
+#include <unistd.h> 
+#include "todo.h"   
 
 #define MAX_INPUT 1024
 #define MAX_ARGS 64
@@ -61,6 +62,21 @@ int handle_builtin(char **args) {
     }
     return 1;
   }
+
+  if (strcmp(args[0], "todo") == 0) {
+    if (args[1] == NULL) {
+        printf("Usage: todo [add|list|done]\n");
+    } else if (strcmp(args[1], "add") == 0 && args[2]) {
+        todo_add(args[2]);
+    } else if (strcmp(args[1], "list") == 0) {
+        todo_list();
+    } else if (strcmp(args[1], "done") == 0 && args[2]) {
+        todo_done(atoi(args[2]));
+    } else {
+        printf("Invalid todo command\n");
+    }
+    return 1;
+}
   return 0; 
 }
 
@@ -88,7 +104,7 @@ void load_myshrc() {
 
 int main() {
   load_myshrc();
-  
+
   char input[MAX_INPUT];
   char *args[MAX_ARGS];
 
