@@ -23,8 +23,6 @@ void parse_input(char *input, char **args) {
   args[i] = NULL;
 }
 
-
-
 int handle_builtin(char **args) {
   if (args[0] == NULL)
     return 0;
@@ -38,10 +36,10 @@ int handle_builtin(char **args) {
   // cd
   if (strcmp(args[0], "cd") == 0) {
     if (args[1] == NULL) {
-      fprintf(stderr, "mysh: expected argument to \"cd\"\n");
+      fprintf(stderr, "mythsh: expected argument to \"cd\"\n");
     } else {
       if (chdir(args[1]) != 0) {
-        perror("mysh");
+        perror("mythsh");
       }
     }
     return 1;
@@ -51,13 +49,13 @@ int handle_builtin(char **args) {
     if (args[1] == NULL) {
       printf("Usage: mood <hacker|chill>\n");
     } else if (strcmp(args[1], "hacker") == 0) {
-      current_prompt = "[👨‍💻 mysh-hacker]$ ";
+      current_prompt = "[👨‍💻 mythsh-hacker]$ ";
     } else if (strcmp(args[1], "chill") == 0) {
-      current_prompt = "[😎 mysh-chill]$ ";
+      current_prompt = "[😎 mythsh-chill]$ ";
     } else if (strcmp(args[1], "gamer") == 0) {
-      current_prompt = "[🎮 mysh-gamer]$ ";
+      current_prompt = "[🎮 mythsh-gamer]$ ";
     } else if (strcmp(args[1], "lofi") == 0) {
-      current_prompt = "[🎶 mysh-lofi]$ ";
+      current_prompt = "[🎶 mythsh-lofi]$ ";
     } else {
       printf("Unknown mood: %s\n", args[1]);
     }
@@ -68,7 +66,7 @@ int handle_builtin(char **args) {
 
 void load_myshrc() {
   char path[1024];
-  snprintf(path, sizeof(path), "%s/.myshrc", getenv("HOME"));
+  snprintf(path, sizeof(path), "%s/.mythrc", getenv("HOME"));
 
   FILE *file = fopen(path, "r");
   if (!file) return; // no rc file, skip
@@ -85,17 +83,17 @@ void load_myshrc() {
           handle_builtin(args); // treat rc file lines like user input
       }
   }
-
   fclose(file);
 }
 
 int main() {
+  load_myshrc();
+  
   char input[MAX_INPUT];
   char *args[MAX_ARGS];
 
   pid_t pid;
   int status;
-
   while (1) {
     printf("%s", current_prompt);
     fflush(stdout);
