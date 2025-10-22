@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude
+CFLAGS = -Wall -Wextra -Isrc
 
 SRC = src/mythSh.c src/todo.c
 OBJ = $(SRC:.c=.o)

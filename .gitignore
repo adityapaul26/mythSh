@@ -27,4 +27,5 @@ core
 # qodo
 .qodo
 
-mythsh
+mythSh
+./mythSh_history
