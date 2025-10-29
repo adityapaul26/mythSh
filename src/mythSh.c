@@ -59,12 +59,11 @@ void load_history() {
 
 void save_history() {
   FILE *file = fopen(HISTORY_FILE, "w");
-  if (!file) return;
-
+  if (!file)
+    return;
   for (int i = 0; i < history_count; i++) {
-      fprintf(file, "%s\n", history[i]);
+    fprintf(file, "%s\n", history[i]);
   }
-
   fclose(file);
 }
 
@@ -319,14 +318,12 @@ void enable_raw_mode() {
   tcgetattr(STDIN_FILENO, &orig_term); // save original terminal state
   struct termios term = orig_term;
   term.c_lflag &= ~(ICANON | ECHO); // disable canonical mode and echo
-  term.c_cc[VMIN] = 1; // minimum number of characters for read
-  term.c_cc[VTIME] = 0; // timeout in deciseconds
+  term.c_cc[VMIN] = 1;              // minimum number of characters for read
+  term.c_cc[VTIME] = 0;             // timeout in deciseconds
   tcsetattr(STDIN_FILENO, TCSANOW, &term);
 }
 
-void disable_raw_mode(void) {
-  tcsetattr(STDIN_FILENO, TCSANOW, &orig_term);
-}
+void disable_raw_mode(void) { tcsetattr(STDIN_FILENO, TCSANOW, &orig_term); }
 int main(void) {
   load_myshrc();
   enable_raw_mode();
@@ -340,97 +337,140 @@ int main(void) {
   int status;
 
   while (1) {
-      pos = 0;
-      memset(input, 0, sizeof(input));
-      printf("%s", current_prompt);
-      fflush(stdout);
+    pos = 0;
+    memset(input, 0, sizeof(input));
+    printf("%s", current_prompt);
+    fflush(stdout);
 
-      while (1) {
-          char c = getchar();
+    while (1) {
+      char c = getchar();
 
-          if (c == '\n') {  // Enter
-              putchar('\n');
-              break;
-          }
-          else if (c == 127) { // Backspace
-              if (pos > 0) {
-                  pos--;
-                  input[pos] = '\0';
-                  printf("\b \b");
-                  fflush(stdout);
-              }
-          }
-          else if (c == '\033') { // Arrow keys
-              char c2 = getchar();
-              if (c2 == '[') {
-                  char dir = getchar();
-                  
-                  if (dir == 'A') { // UP
-                      if (history_index > 0) {
-                          history_index--;
-                          printf("\33[2K\r%s%s", current_prompt, history[history_index]);
-                          fflush(stdout);
-                          strcpy(input, history[history_index]);
-                          pos = strlen(input);
-                      }
-                  } 
-                  else if (dir == 'B') { // DOWN
-                      if (history_index < history_count - 1) {
-                          history_index++;
-                          printf("\33[2K\r%s%s", current_prompt, history[history_index]);
-                          fflush(stdout);
-                          strcpy(input, history[history_index]);
-                          pos = strlen(input);
-                      } else {
-                          printf("\33[2K\r%s", current_prompt);
-                          fflush(stdout);
-                          input[0] = '\0';
-                          pos = 0;
-                          history_index = history_count;
-                      }
-                  }
-              }
-          } 
-          else { // normal character
-              input[pos++] = c;
-              putchar(c);
-              fflush(stdout);
-          }
-      }
-
-      if (pos > 0) {
+      if (c == '\n') { // Enter
+        putchar('\n');
+        break;
+      } else if (c == 127) { // Backspace
+        if (pos > 0) {
+          pos--;
           input[pos] = '\0';
+          printf("\b \b");
+          fflush(stdout);
+        }
+      } else if (c == '\033') { // Arrow keys
+        char c2 = getchar();
+        if (c2 == '[') {
+          char dir = getchar();
 
-          // add to history
-          if (history_count == 0 || strcmp(history[history_count - 1], input) != 0) {
-              if (history_count < MAX_HISTORY)
-                  history[history_count++] = strdup(input);
-          }
-          history_index = history_count;
+          if (dir == 'A') { // UP
+            if (history_index > 0) {
+                history_index--;
+                // Clear current line first
+                printf("\r\033[K");
+                
+                // Count newlines in prompt
+                int lines = 0;
+                for (int i = 0; current_prompt[i]; i++) {
+                    if (current_prompt[i] == '\n') lines++;
+                }
+                
+                // Move up and clear each prompt line
+                for (int i = 0; i < lines; i++) {
+                    printf("\033[A\033[K");
+                }
+                
+                // Reprint prompt and history
+                printf("\r%s%s", current_prompt, history[history_index]);
+                fflush(stdout);
+                strcpy(input, history[history_index]);
+                pos = strlen(input);
+            }
+        } 
+        else if (dir == 'B') { // DOWN
+            if (history_index < history_count - 1) {
+                history_index++;
+                // Clear current line first
+                printf("\r\033[K");
+                
+                // Count newlines in prompt
+                int lines = 0;
+                for (int i = 0; current_prompt[i]; i++) {
+                    if (current_prompt[i] == '\n') lines++;
+                }
+                
+                // Move up and clear each prompt line
+                for (int i = 0; i < lines; i++) {
+                    printf("\033[A\033[K");
+                }
+                
+                // Reprint prompt and history
+                printf("\r%s%s", current_prompt, history[history_index]);
+                fflush(stdout);
+                strcpy(input, history[history_index]);
+                pos = strlen(input);
+            } else {
+                // Clear current line first
+                printf("\r\033[K");
+                
+                // Count newlines in prompt
+                int lines = 0;
+                for (int i = 0; current_prompt[i]; i++) {
+                    if (current_prompt[i] == '\n') lines++;
+                }
+                
+                // Move up and clear each prompt line
+                for (int i = 0; i < lines; i++) {
+                    printf("\033[A\033[K");
+                }
+                
+                // Reprint just the prompt
+                printf("\r%s", current_prompt);
+                fflush(stdout);
+                input[0] = '\0';
+                pos = 0;
+                history_index = history_count;
+            }
+        }
+        }
+      } else { // normal character
+        input[pos++] = c;
+        putchar(c);
+        fflush(stdout);
       }
+    }
 
-      if (strcmp(input, "exit") == 0)
-          break;
+    if (pos > 0) {
+      input[pos] = '\0';
 
-      parse_input(input, args);
-
-      if (args[0] == NULL)
-          continue;
-
-      if (handle_builtin(args))
-          continue;
-
-      pid = fork();
-
-      if (pid == 0) { // child
-          execvp(args[0], args);
-          fprintf(stderr, "mythsh: %s: %s\n", args[0], strerror(errno));
-          _exit(127);
-      } else if (pid > 0) { // parent
-          waitpid(pid, &status, 0);
-      } else {
-          perror("mythsh: fork error");
+      // add to history
+      if (history_count == 0 ||
+          strcmp(history[history_count - 1], input) != 0) {
+        if (history_count < MAX_HISTORY)
+          history[history_count++] = strdup(input);
       }
+      history_index = history_count;
+    }
+
+    if (strcmp(input, "exit") == 0)
+      break;
+
+    parse_input(input, args);
+
+    if (args[0] == NULL)
+      continue;
+
+    if (handle_builtin(args))
+      continue;
+
+    pid = fork();
+
+    if (pid == 0) { // child
+      execvp(args[0], args);
+      fprintf(stderr, "mythsh: %s: %s\n", args[0], strerror(errno));
+      _exit(127);
+    } else if (pid > 0) { // parent
+      waitpid(pid, &status, 0);
+    } else {
+      perror("mythsh: fork error");
+    }
   }
 
   disable_raw_mode();
