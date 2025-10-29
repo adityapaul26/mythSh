@@ -362,73 +362,75 @@ int main(void) {
 
           if (dir == 'A') { // UP
             if (history_index > 0) {
-                history_index--;
-                // Clear current line first
-                printf("\r\033[K");
-                
-                // Count newlines in prompt
-                int lines = 0;
-                for (int i = 0; current_prompt[i]; i++) {
-                    if (current_prompt[i] == '\n') lines++;
-                }
-                
-                // Move up and clear each prompt line
-                for (int i = 0; i < lines; i++) {
-                    printf("\033[A\033[K");
-                }
-                
-                // Reprint prompt and history
-                printf("\r%s%s", current_prompt, history[history_index]);
-                fflush(stdout);
-                strcpy(input, history[history_index]);
-                pos = strlen(input);
+              history_index--;
+              // Clear current line first
+              printf("\r\033[K");
+
+              // Count newlines in prompt
+              int lines = 0;
+              for (int i = 0; current_prompt[i]; i++) {
+                if (current_prompt[i] == '\n')
+                  lines++;
+              }
+
+              // Move up and clear each prompt line
+              for (int i = 0; i < lines; i++) {
+                printf("\033[A\033[K");
+              }
+
+              // Reprint prompt and history
+              printf("\r%s%s", current_prompt, history[history_index]);
+              fflush(stdout);
+              strcpy(input, history[history_index]);
+              pos = strlen(input);
             }
-        } 
-        else if (dir == 'B') { // DOWN
+          } else if (dir == 'B') { // DOWN
             if (history_index < history_count - 1) {
-                history_index++;
-                // Clear current line first
-                printf("\r\033[K");
-                
-                // Count newlines in prompt
-                int lines = 0;
-                for (int i = 0; current_prompt[i]; i++) {
-                    if (current_prompt[i] == '\n') lines++;
-                }
-                
-                // Move up and clear each prompt line
-                for (int i = 0; i < lines; i++) {
-                    printf("\033[A\033[K");
-                }
-                
-                // Reprint prompt and history
-                printf("\r%s%s", current_prompt, history[history_index]);
-                fflush(stdout);
-                strcpy(input, history[history_index]);
-                pos = strlen(input);
+              history_index++;
+              // Clear current line first
+              printf("\r\033[K");
+
+              // Count newlines in prompt
+              int lines = 0;
+              for (int i = 0; current_prompt[i]; i++) {
+                if (current_prompt[i] == '\n')
+                  lines++;
+              }
+
+              // Move up and clear each prompt line
+              for (int i = 0; i < lines; i++) {
+                printf("\033[A\033[K");
+              }
+
+              // Reprint prompt and history
+              printf("\r%s%s", current_prompt, history[history_index]);
+              fflush(stdout);
+              strcpy(input, history[history_index]);
+              pos = strlen(input);
             } else {
-                // Clear current line first
-                printf("\r\033[K");
-                
-                // Count newlines in prompt
-                int lines = 0;
-                for (int i = 0; current_prompt[i]; i++) {
-                    if (current_prompt[i] == '\n') lines++;
-                }
-                
-                // Move up and clear each prompt line
-                for (int i = 0; i < lines; i++) {
-                    printf("\033[A\033[K");
-                }
-                
-                // Reprint just the prompt
-                printf("\r%s", current_prompt);
-                fflush(stdout);
-                input[0] = '\0';
-                pos = 0;
-                history_index = history_count;
+              // Clear current line first
+              printf("\r\033[K");
+
+              // Count newlines in prompt
+              int lines = 0;
+              for (int i = 0; current_prompt[i]; i++) {
+                if (current_prompt[i] == '\n')
+                  lines++;
+              }
+
+              // Move up and clear each prompt line
+              for (int i = 0; i < lines; i++) {
+                printf("\033[A\033[K");
+              }
+
+              // Reprint just the prompt
+              printf("\r%s", current_prompt);
+              fflush(stdout);
+              input[0] = '\0';
+              pos = 0;
+              history_index = history_count;
             }
-        }
+          }
         }
       } else { // normal character
         input[pos++] = c;
