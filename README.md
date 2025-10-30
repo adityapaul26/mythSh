@@ -5,6 +5,12 @@ It brings a modern Powerlevel10k-inspired aesthetic, with colorful prompt segmen
 
 ---
 
+## 📸 Screenshots
+
+### MythSh Default Theme
+![MythSh Prompt Screenshot](./assets/mythsh-prompts-ss.png)
+---
+
 ## ✨ Features
 
 * 🧠 **Command Execution** — Run system commands seamlessly
@@ -12,7 +18,7 @@ It brings a modern Powerlevel10k-inspired aesthetic, with colorful prompt segmen
 * 💾 **Persistent History File** — Commands are saved between sessions
 * 🎨 **Powerlevel10k-Style Prompt** — Colored segments & icons
 * 🔍 **Git Integration** — Shows current branch in prompt
-* ⚙️ **Configurable via `mythsh.conf`** — Customize colors, symbols, and username display
+* ⚙️ **Configurable via `.mythrc`** — Customize colors, symbols, and username display
 * 🧩 **Nerd Font Icons** — Folder, git branch, clock, etc.
 * 🚀 **Lightweight & Fast** — Pure C, zero external dependencies
 
@@ -158,12 +164,7 @@ If you’d like to add new prompt themes, icons, or internal commands:
 4. Push to branch (`git push origin feature-amazing`)
 5. Open a PR 🚀
 
----
 
-## 📸 Screenshots
-
-### MythSh Default Theme
-![MythSh Prompt Screenshot](./assets/mythsh-prompts-ss.png)
 
 ---
 
