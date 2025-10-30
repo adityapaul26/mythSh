@@ -90,29 +90,39 @@ void build_prompt(const char *input_template, char *output) {
       if (input_template[i] == 'u') {
         struct passwd *pw = getpwuid(getuid());
         const char *name = (pw && pw->pw_name) ? pw->pw_name : "unknown";
-        int written = snprintf(&temp[j], MAX_PROMPT - j, "%s", name);
+        int written = snprintf(&temp[j], MAX_PROMPT - j, 
+                               "\033[48;5;74m\033[38;5;232m %s \033[0m\033[38;5;74m\ue0b0\033[0m", 
+                               name);
         if (written > 0)
           j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
       } else if (input_template[i] == 'h') {
         char hostname[HOST_NAME_MAX];
         if (gethostname(hostname, sizeof(hostname)) == 0) {
           hostname[sizeof(hostname) - 1] = '\0';
-          int written = snprintf(&temp[j], MAX_PROMPT - j, "%s", hostname);
+          int written = snprintf(&temp[j], MAX_PROMPT - j, 
+                                 "\033[48;5;208m\033[38;5;232m %s \033[0m\033[38;5;208m\ue0b0\033[0m", 
+                                 hostname);
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         } else {
-          int written = snprintf(&temp[j], MAX_PROMPT - j, "%s", "host");
+          int written = snprintf(&temp[j], MAX_PROMPT - j, 
+                                 "\033[48;5;208m\033[38;5;232m %s \033[0m\033[38;5;208m\ue0b0\033[0m", 
+                                 "host");
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         }
       } else if (input_template[i] == 'd') {
         char cwd[PATH_MAX];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
-          int written = snprintf(&temp[j], MAX_PROMPT - j, "%s", cwd);
+          int written = snprintf(&temp[j], MAX_PROMPT - j, 
+                                 "\033[48;5;183m\033[38;5;232m %s \033[0m\033[38;5;183m\ue0b0\033[0m", 
+                                 cwd);
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         } else {
-          int written = snprintf(&temp[j], MAX_PROMPT - j, "%s", ".");
+          int written = snprintf(&temp[j], MAX_PROMPT - j, 
+                                 "\033[48;5;183m\033[38;5;232m %s \033[0m\033[38;5;183m\ue0b0\033[0m", 
+                                 ".");
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         }
