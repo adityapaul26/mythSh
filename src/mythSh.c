@@ -2,11 +2,13 @@
 #include <errno.h>
 #include <limits.h>
 #include <pwd.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/param.h> // for MAXHOSTNAMELEN fallback
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <termios.h>
@@ -79,6 +81,24 @@ void parse_input(char *input, char **args) {
   args[i] = NULL;
 }
 
+bool is_git_repo() {
+  struct stat st;
+  return (stat(".git", &st) == 0 && S_ISDIR(st.st_mode));
+}
+
+void get_git_branch(char *branch, size_t size) {
+  FILE *fp = popen("git rev-parse --abbrev-ref HEAD 2>/dev/null", "r");
+  if (!fp) {
+    branch[0] = '\0';
+    return;
+  }
+  if (fgets(branch, size, fp) != NULL)
+    branch[strcspn(branch, "\n")] = '\0'; // strip newline
+  else
+    branch[0] = '\0';
+  pclose(fp);
+}
+
 /* Build prompt from a template with %u (user), %h (hostname), %d (cwd). */
 void build_prompt(const char *input_template, char *output) {
   char temp[MAX_PROMPT];
@@ -89,40 +109,63 @@ void build_prompt(const char *input_template, char *output) {
       i++;
       if (input_template[i] == 'u') {
         struct passwd *pw = getpwuid(getuid());
+        char sym[6]="\uf007";
         const char *name = (pw && pw->pw_name) ? pw->pw_name : "unknown";
-        int written = snprintf(&temp[j], MAX_PROMPT - j, 
-                               "\033[48;5;74m\033[38;5;232m %s \033[0m\033[38;5;74m\ue0b0\033[0m", 
-                               name);
+        int written = snprintf(
+            &temp[j], MAX_PROMPT - j,
+            "\033[48;5;74m\033[38;5;232m %s %s \033[0m\033[38;5;74m\033[0m",sym, name);
         if (written > 0)
           j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
       } else if (input_template[i] == 'h') {
         char hostname[HOST_NAME_MAX];
         if (gethostname(hostname, sizeof(hostname)) == 0) {
           hostname[sizeof(hostname) - 1] = '\0';
-          int written = snprintf(&temp[j], MAX_PROMPT - j, 
-                                 "\033[48;5;208m\033[38;5;232m %s \033[0m\033[38;5;208m\ue0b0\033[0m", 
-                                 hostname);
+          int written = snprintf(
+              &temp[j], MAX_PROMPT - j,
+              "\033[48;5;208m\033[38;5;232m %s \033[0m\033[38;5;208m\033[0m",
+              hostname);
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         } else {
-          int written = snprintf(&temp[j], MAX_PROMPT - j, 
-                                 "\033[48;5;208m\033[38;5;232m %s \033[0m\033[38;5;208m\ue0b0\033[0m", 
-                                 "host");
+          int written = snprintf(
+              &temp[j], MAX_PROMPT - j,
+              "\033[48;5;208m\033[38;5;232m %s \033[0m\033[38;5;208m\033[0m",
+              "host");
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         }
       } else if (input_template[i] == 'd') {
         char cwd[PATH_MAX];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
-          int written = snprintf(&temp[j], MAX_PROMPT - j, 
-                                 "\033[48;5;183m\033[38;5;232m %s \033[0m\033[38;5;183m\ue0b0\033[0m", 
+          int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                 "\033[48;5;183m\033[38;5;232m %s "
+                                 "\033[0m\033[38;5;183m\033[0m",
                                  cwd);
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         } else {
-          int written = snprintf(&temp[j], MAX_PROMPT - j, 
-                                 "\033[48;5;183m\033[38;5;232m %s \033[0m\033[38;5;183m\ue0b0\033[0m", 
+          int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                 "\033[48;5;183m\033[38;5;232m %s "
+                                 "\033[0m\033[38;5;183m\033[0m",
                                  ".");
+          if (written > 0)
+            j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+        }
+      } else if (input_template[i] == 'g') {
+        char sym[6] = "\ue725";
+        char branch[64] = "";
+        if (is_git_repo()) {
+          get_git_branch(branch, sizeof(branch));
+          int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                 "\033[48;5;114m\033[38;5;232m %s %s "
+                                 "\033[0m\033[38;5;114m\ue0b0\033[0m",
+                                 sym, branch);
+          if (written > 0)
+            j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+        } else {
+          // Optional: visual separator if not in git repo
+          int written =
+              snprintf(&temp[j], MAX_PROMPT - j, "\033[38;5;240m\ue0b0\033[0m");
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         }
@@ -194,27 +237,37 @@ int handle_builtin(char **args) {
       printf("Usage: mood <hacker|chill|gamer|lofi|ghoul>\n");
     } else if (strcmp(args[1], "hacker") == 0) {
       strncpy(current_prompt,
-              "╭─\033[48;5;208m\033[38;5;232m \uf21b \033[0m\033[38;5;208m\ue0b0\033[0m mythsh-hacker \033[38;5;208m\ue0b0\033[0m\n"
+              "╭─\033[48;5;208m\033[38;5;232m \uf21b "
+              "\033[0m\033[38;5;208m\ue0b0\033[0m mythsh-hacker "
+              "\033[38;5;208m\ue0b0\033[0m\n"
               "╰─\uf061 ",
               MAX_PROMPT - 1);
     } else if (strcmp(args[1], "chill") == 0) {
       strncpy(current_prompt,
-              "╭─\033[48;5;74m\033[38;5;232m \uea85 \033[0m\033[38;5;74m\ue0b0\033[0m mythsh-chill \033[38;5;74m\ue0b0\033[0m\n"
+              "╭─\033[48;5;74m\033[38;5;232m \uea85 "
+              "\033[0m\033[38;5;74m\ue0b0\033[0m mythsh-chill "
+              "\033[38;5;74m\ue0b0\033[0m\n"
               "╰─\uf061 ",
               MAX_PROMPT - 1);
     } else if (strcmp(args[1], "gamer") == 0) {
       strncpy(current_prompt,
-              "╭─\033[48;5;170m\033[38;5;232m \uf11b \033[0m\033[38;5;170m\ue0b0\033[0m mythsh-gamer \033[38;5;170m\ue0b0\033[0m\n"
+              "╭─\033[48;5;170m\033[38;5;232m \uf11b "
+              "\033[0m\033[38;5;170m\ue0b0\033[0m mythsh-gamer "
+              "\033[38;5;170m\ue0b0\033[0m\n"
               "╰─\uf061 ",
               MAX_PROMPT - 1);
     } else if (strcmp(args[1], "lofi") == 0) {
       strncpy(current_prompt,
-              "╭─\033[48;5;183m\033[38;5;232m \uf001 \033[0m\033[38;5;183m\ue0b0\033[0m mythsh-lofi \033[38;5;183m\ue0b0\033[0m\n"
+              "╭─\033[48;5;183m\033[38;5;232m \uf001 "
+              "\033[0m\033[38;5;183m\ue0b0\033[0m mythsh-lofi "
+              "\033[38;5;183m\ue0b0\033[0m\n"
               "╰─\uf061 ",
               MAX_PROMPT - 1);
     } else if (strcmp(args[1], "ghoul") == 0) {
       strncpy(current_prompt,
-              "╭─\033[48;5;250m\033[38;5;232m \ueefe \033[0m\033[38;5;250m\ue0b0\033[0m mythsh-ghoul \033[38;5;250m\ue0b0\033[0m\n"
+              "╭─\033[48;5;250m\033[38;5;232m \ueefe "
+              "\033[0m\033[38;5;250m\ue0b0\033[0m mythsh-ghoul "
+              "\033[38;5;250m\ue0b0\033[0m\n"
               "╰─\uf061 ",
               MAX_PROMPT - 1);
     } else {
