@@ -181,26 +181,31 @@ int handle_builtin(char **args) {
   // mood (predefined prompts)
   if (strcmp(args[0], "mood") == 0) {
     if (args[1] == NULL) {
-      printf("Usage: mood <hacker|chill|gamer|lofi>\n");
+      printf("Usage: mood <hacker|chill|gamer|lofi|ghoul>\n");
     } else if (strcmp(args[1], "hacker") == 0) {
       strncpy(current_prompt,
-              "╭─[👨‍💻 mythsh-hacker]\n"
-              "╰─> ",
+              "╭─\033[48;5;208m\033[38;5;232m \uf21b \033[0m\033[38;5;208m\ue0b0\033[0m mythsh-hacker \033[38;5;208m\ue0b0\033[0m\n"
+              "╰─\uf061 ",
               MAX_PROMPT - 1);
     } else if (strcmp(args[1], "chill") == 0) {
       strncpy(current_prompt,
-              "╭─[😎 mythsh-chill]\n"
-              "╰─> ",
+              "╭─\033[48;5;74m\033[38;5;232m \uea85 \033[0m\033[38;5;74m\ue0b0\033[0m mythsh-chill \033[38;5;74m\ue0b0\033[0m\n"
+              "╰─\uf061 ",
               MAX_PROMPT - 1);
     } else if (strcmp(args[1], "gamer") == 0) {
       strncpy(current_prompt,
-              "╭─[🎮 mythsh-gamer]\n"
-              "╰─> ",
+              "╭─\033[48;5;170m\033[38;5;232m \uf11b \033[0m\033[38;5;170m\ue0b0\033[0m mythsh-gamer \033[38;5;170m\ue0b0\033[0m\n"
+              "╰─\uf061 ",
               MAX_PROMPT - 1);
     } else if (strcmp(args[1], "lofi") == 0) {
       strncpy(current_prompt,
-              "╭─[🎶 mythsh-lofi]\n"
-              "╰─> ",
+              "╭─\033[48;5;183m\033[38;5;232m \uf001 \033[0m\033[38;5;183m\ue0b0\033[0m mythsh-lofi \033[38;5;183m\ue0b0\033[0m\n"
+              "╰─\uf061 ",
+              MAX_PROMPT - 1);
+    } else if (strcmp(args[1], "ghoul") == 0) {
+      strncpy(current_prompt,
+              "╭─\033[48;5;250m\033[38;5;232m \ueefe \033[0m\033[38;5;250m\ue0b0\033[0m mythsh-ghoul \033[38;5;250m\ue0b0\033[0m\n"
+              "╰─\uf061 ",
               MAX_PROMPT - 1);
     } else {
       printf("Unknown mood: %s\n", args[1]);
@@ -300,7 +305,6 @@ void load_myshrc() {
       p++;
     if (*p == '#' || *p == '\0')
       continue;
-
     /* parse */
     parse_input(p, args);
     if (args[0] != NULL) {
@@ -308,6 +312,19 @@ void load_myshrc() {
       if (!handle_builtin(args)) {
         /* if not builtin, you might want to exec them or ignore; here we ignore
          */
+        // nah we aint gonna ignore them ... we gonna execute those commands
+        id_t pid;
+        pid = fork();
+
+        if (pid == 0) {
+          // child process
+          execvp(args[0], args);
+          fprintf(stderr, "mythsh: %s: %s\n", args[0], strerror(errno));
+        } else if (pid > 0) {
+          wait(NULL);
+        } else {
+          perror("mythsh: fork error");
+        }
       }
     }
   }
