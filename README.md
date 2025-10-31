@@ -7,7 +7,10 @@ It brings a modern Powerlevel10k-inspired aesthetic, with colorful prompt segmen
 
 ## 📸 Screenshots
 
-### MythSh Default Theme
+### MythSh Default (minimal) Theme
+![MythSh Prompt Screenshot](./assets/minimal-mythsh.png)
+
+### MythSh graphic(powerlevel10k-like) theme
 ![MythSh Prompt Screenshot](./assets/mythsh-prompts-ss.png)
 ---
 
@@ -25,6 +28,88 @@ It brings a modern Powerlevel10k-inspired aesthetic, with colorful prompt segmen
 ---
 
 ## 🛠️ Installation
+
+Perfect 😎 — here’s a **clean, professional** `README.md` section for your **MythSH** project that covers both **installation** and **uninstallation** clearly, just like popular open-source tools (e.g., `Starship`, `oh-my-zsh`, etc.).
+
+You can copy this directly into your `README.md`.
+
+---
+
+## ⚙️ Installation
+
+You can install **MythSH** with a single command using **curl**:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/<yourusername>/mythsh/main/install.sh | bash
+```
+
+This script will:
+
+* 🧩 Check and install required dependencies (`git`, `gcc`, `make`)
+* 📦 Clone the MythSH repository
+* ⚙️ Build and install the binary to `~/.local/bin/mythsh`
+* 🛠️ Add `~/.local/bin` to your `PATH` if not already added
+* ✅ Print a success message once installation completes
+
+After installation, restart your terminal or run:
+
+```bash
+source ~/.bashrc
+```
+
+Then launch MythSH using:
+
+```bash
+mythsh
+```
+
+---
+
+### 💡 Optional Manual Installation
+
+If you prefer to install manually:
+
+```bash
+git clone https://github.com/adityapaul26/mythsh.git
+cd mythsh
+make
+cp mythsh ~/.local/bin/
+```
+
+Make sure `~/.local/bin` is in your `PATH`.
+
+---
+
+## 🧹 Uninstallation
+
+To remove **MythSH**, simply delete the installed binary:
+
+```bash
+rm -f ~/.local/bin/mythsh
+```
+
+If you used the install script, you can also uninstall via:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/adityapaul26/mythsh/main/uninstall.sh | bash
+```
+
+This will:
+
+* 🗑️ Remove the MythSH binary from your system
+* 🧽 Clean up any added PATH entries (if applicable)
+* ✅ Confirm successful uninstallation
+
+---
+
+### 🔍 Check if MythSH is still installed
+
+```bash
+which mythsh
+```
+
+If it prints nothing (no path), MythSH is fully removed.
+
 
 ### 1️⃣ Clone the Repository
 
@@ -174,5 +259,5 @@ MIT License © 2025 adityapaul26
 
 Feel free to use, modify, and share — with attribution.
 
-curl -fsSL https://raw.githubusercontent.com/adityapaul26/mythsh/main/install.sh | bash
+
 
