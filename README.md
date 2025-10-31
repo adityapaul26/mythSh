@@ -173,3 +173,6 @@ If you’d like to add new prompt themes, icons, or internal commands:
 MIT License © 2025 adityapaul26
 
 Feel free to use, modify, and share — with attribution.
+
+curl -fsSL https://raw.githubusercontent.com/adityapaul26/mythsh/main/install.sh | bash
+

@@ -115,6 +115,7 @@ static bool is_utf8_locale(void) {
 
 /* Build prompt from a template with %u (user), %h (hostname), %d (cwd). */
 void build_prompt(const char *input_template, char *output) {
+  bool use_utf8 = is_utf8_locale();
   if (strcmp(theme, "graphic") == 0) {
     char temp[MAX_PROMPT];
     int i = 0, j = 0;
@@ -125,28 +126,28 @@ void build_prompt(const char *input_template, char *output) {
         if (input_template[i] == 'u') {
           struct passwd *pw = getpwuid(getuid());
           const char *name = (pw && pw->pw_name) ? pw->pw_name : "unknown";
+          const char *sep74 = use_utf8 ? "\033[38;5;74m\ue0b0\033[0m" : " | ";
           int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                 "\033[48;5;74m\033[38;5;232m %s "
-                                 "\033[0m\033[38;5;74m\ue0b0\033[0m",
-                                 name);
+                                 "\033[48;5;74m\033[38;5;232m %s \033[0m%s",
+                                 name, sep74);
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         } else if (input_template[i] == 'h') {
           char hostname[HOST_NAME_MAX];
           if (gethostname(hostname, sizeof(hostname)) == 0) {
             hostname[sizeof(hostname) - 1] = '\0';
+            const char *sep208 = use_utf8 ? "\033[38;5;208m\ue0b0\033[0m" : " | ";
             int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                   "\033[48;5;208m\033[38;5;232m %s "
-                                   "\033[0m\033[38;5;208m\ue0b0\033[0m",
-                                   hostname);
+                                   "\033[48;5;208m\033[38;5;232m %s \033[0m%s",
+                                   hostname, sep208);
             if (written > 0)
               j +=
                   (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
           } else {
+            const char *sep208 = use_utf8 ? "\033[38;5;208m\ue0b0\033[0m" : " | ";
             int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                   "\033[48;5;208m\033[38;5;232m %s "
-                                   "\033[0m\033[38;5;208m\ue0b0\033[0m",
-                                   "host");
+                                   "\033[48;5;208m\033[38;5;232m %s \033[0m%s",
+                                   "host", sep208);
             if (written > 0)
               j +=
                   (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
@@ -154,21 +155,38 @@ void build_prompt(const char *input_template, char *output) {
         } else if (input_template[i] == 'd') {
           char cwd[PATH_MAX];
           if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            const char *sep183 = use_utf8 ? "\033[38;5;183m\ue0b0\033[0m" : " | ";
             int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                   "\033[48;5;183m\033[38;5;232m %s "
-                                   "\033[0m\033[38;5;183m\ue0b0\033[0m",
-                                   cwd);
+                                   "\033[48;5;183m\033[38;5;232m %s \033[0m%s",
+                                   cwd, sep183);
             if (written > 0)
               j +=
                   (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
           } else {
+            const char *sep183 = use_utf8 ? "\033[38;5;183m\ue0b0\033[0m" : " | ";
             int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                   "\033[48;5;183m\033[38;5;232m %s "
-                                   "\033[0m\033[38;5;183m\ue0b0\033[0m",
-                                   ".");
+                                   "\033[48;5;183m\033[38;5;232m %s \033[0m%s",
+                                   ".", sep183);
             if (written > 0)
               j +=
                   (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          }
+        } else if (input_template[i] == 'g') {
+          char branch[64] = "";
+          if (is_git_repo()) {
+            get_git_branch(branch, sizeof(branch));
+            const char *sep114 = use_utf8 ? "\033[38;5;114m\ue0b0\033[0m" : " | ";
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   "\033[48;5;114m\033[38;5;232m %s \033[0m%s",
+                                   branch[0] ? branch : "git", sep114);
+            if (written > 0)
+              j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          } else {
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   use_utf8 ? "\033[38;5;240m\ue0b0\033[0m"
+                                            : "-");
+            if (written > 0)
+              j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
           }
         } else {
           /* Unknown directive: emit %<char> literally */
@@ -184,13 +202,17 @@ void build_prompt(const char *input_template, char *output) {
       }
       i++;
     }
+    if (j < MAX_PROMPT - 5) {
+      int written = snprintf(&temp[j], MAX_PROMPT - j, "\033[0m");
+      if (written > 0)
+        j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+    }
     temp[j] = '\0';
     /* Ensure output is null-terminated and fits */
     strncpy(output, temp, MAX_PROMPT - 1);
     output[MAX_PROMPT - 1] = '\0';
   } else {
     char temp[MAX_PROMPT];
-    bool use_utf8 = is_utf8_locale();
     int i = 0, j = 0;
 
     while (input_template[i] != '\0' && j < MAX_PROMPT - 1) {
@@ -282,8 +304,7 @@ void build_prompt(const char *input_template, char *output) {
       }
       i++;
     }
-    /* Ensure prompt ends with a reset so colors don't bleed even if truncated
-     */
+    /* Ensure prompt ends with a reset so colors don't bleed even if truncated */
     if (j < MAX_PROMPT - 5) {
       int written = snprintf(&temp[j], MAX_PROMPT - j, "\033[0m");
       if (written > 0)
@@ -328,12 +349,16 @@ int handle_builtin(char **args) {
 
   // cd
   if (strcmp(args[0], "cd") == 0) {
-    if (args[1] == NULL) {
-      fprintf(stderr, "mythsh: expected argument to \"cd\"\n");
-    } else {
-      if (chdir(args[1]) != 0) {
-        perror("mythsh");
+    const char *target = args[1];
+    if (target == NULL) {
+      target = getenv("HOME");
+      if (!target) {
+        fprintf(stderr, "mythsh: cd: HOME not set\n");
+        return 1;
       }
+    }
+    if (chdir(target) != 0) {
+      perror("mythsh");
     }
     return 1;
   }
@@ -497,7 +522,7 @@ void load_myshrc() {
         /* if not builtin, you might want to exec them or ignore; here we ignore
          */
         // nah we aint gonna ignore them ... we gonna execute those commands
-        id_t pid;
+        pid_t pid;
         pid = fork();
 
         if (pid == 0) {
