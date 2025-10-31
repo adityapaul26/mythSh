@@ -27,6 +27,19 @@ It brings a modern Powerlevel10k-inspired aesthetic, with colorful prompt segmen
 
 ---
 
+### ⚡ Lightweight & Fast
+
+MythSH starts **in just ~15ms** — faster than most shells.
+Built in C with **zero dependencies**, it’s designed to be **minimal, efficient, and responsive**.
+Perfect for developers who value **speed and simplicity**.
+
+```bash
+$ (echo exit | ./mythsh)
+0.01s user 0.01s system 102% cpu 0.015 total
+```
+
+---
+
 ## 🛠️ Installation
 
 Perfect 😎 — here’s a **clean, professional** `README.md` section for your **MythSH** project that covers both **installation** and **uninstallation** clearly, just like popular open-source tools (e.g., `Starship`, `oh-my-zsh`, etc.).
