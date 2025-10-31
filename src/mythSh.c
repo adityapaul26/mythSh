@@ -28,9 +28,10 @@
 
 #define MAX_INPUTS 1024
 #define MAX_ARGS 64
-#define MAX_PROMPT 256
+#define MAX_PROMPT 1024
 #define MAX_HISTORY 1000
 #define HISTORY_FILE ".mythsh_history"
+
 
 struct termios orig_term;
 
@@ -39,6 +40,8 @@ int history_count = 0;
 int history_index = 0;
 
 char current_prompt[MAX_PROMPT] = "mythsh> "; // default prompt
+char current_prompt_template[MAX_PROMPT] = ""; // empty means no dynamic template
+bool has_prompt_template = false;
 
 /* Simple tokenization on whitespace. Note: this does NOT support quoted args.
    If you want quoting (e.g. "some arg with spaces") you'll need a tokenizer
@@ -99,9 +102,20 @@ void get_git_branch(char *branch, size_t size) {
   pclose(fp);
 }
 
+static bool is_utf8_locale(void) {
+  const char *vars[] = { getenv("LC_ALL"), getenv("LC_CTYPE"), getenv("LANG") };
+  for (size_t i = 0; i < sizeof(vars) / sizeof(vars[0]); i++) {
+    if (vars[i] && (strstr(vars[i], "UTF-8") || strstr(vars[i], "utf8"))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /* Build prompt from a template with %u (user), %h (hostname), %d (cwd). */
 void build_prompt(const char *input_template, char *output) {
   char temp[MAX_PROMPT];
+  bool use_utf8 = is_utf8_locale();
   int i = 0, j = 0;
 
   while (input_template[i] != '\0' && j < MAX_PROMPT - 1) {
@@ -109,63 +123,64 @@ void build_prompt(const char *input_template, char *output) {
       i++;
       if (input_template[i] == 'u') {
         struct passwd *pw = getpwuid(getuid());
-        char sym[6]="\uf007";
+        const char *sym = use_utf8 ? "\uf007" : "usr";
         const char *name = (pw && pw->pw_name) ? pw->pw_name : "unknown";
-        int written = snprintf(
-            &temp[j], MAX_PROMPT - j,
-            "\033[48;5;74m\033[38;5;232m %s %s \033[0m\033[38;5;74m\033[0m",sym, name);
+        int written = snprintf(&temp[j], MAX_PROMPT - j,
+                               "\033[1;38;5;81m[\033[0m\033[38;5;117m%s "
+                               "%s\033[0m\033[1;38;5;81m]\033[0m ",
+                               sym, name);
         if (written > 0)
           j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
       } else if (input_template[i] == 'h') {
         char hostname[HOST_NAME_MAX];
+        const char *sym = use_utf8 ? "\uf233" : "host";
         if (gethostname(hostname, sizeof(hostname)) == 0) {
           hostname[sizeof(hostname) - 1] = '\0';
-          int written = snprintf(
-              &temp[j], MAX_PROMPT - j,
-              "\033[48;5;208m\033[38;5;232m %s \033[0m\033[38;5;208m\033[0m",
-              hostname);
+          int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                 "\033[1;38;5;214m[\033[0m\033[38;5;222m%s "
+                                 "%s\033[0m\033[1;38;5;214m]\033[0m",
+                                 sym,hostname);
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         } else {
           int written = snprintf(
               &temp[j], MAX_PROMPT - j,
-              "\033[48;5;208m\033[38;5;232m %s \033[0m\033[38;5;208m\033[0m",
-              "host");
+              "\033[1;38;5;214m[\033[0m\033[38;5;222m%s %s\033[0m\033[1;38;5;214m]\033[0m",
+              sym, "host");
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         }
       } else if (input_template[i] == 'd') {
         char cwd[PATH_MAX];
+        const char *sym = use_utf8 ? "\uf07c" : "dir";
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
           int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                 "\033[48;5;183m\033[38;5;232m %s "
-                                 "\033[0m\033[38;5;183m\033[0m",
-                                 cwd);
+                                 "\033[1;38;5;213m[\033[0m\033[38;5;219m%s %s\033[0m\033[1;38;5;213m]\033[0m",
+                                 sym, cwd);
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         } else {
           int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                 "\033[48;5;183m\033[38;5;232m %s "
-                                 "\033[0m\033[38;5;183m\033[0m",
-                                 ".");
+                                 "\033[1;38;5;213m[\033[0m\033[38;5;219m%s %s\033[0m\033[1;38;5;213m]\033[0m",
+                                 sym, ".");
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         }
       } else if (input_template[i] == 'g') {
-        char sym[6] = "\ue725";
+        const char *sym = use_utf8 ? "\ue725" : "git";
         char branch[64] = "";
         if (is_git_repo()) {
           get_git_branch(branch, sizeof(branch));
           int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                 "\033[48;5;114m\033[38;5;232m %s %s "
-                                 "\033[0m\033[38;5;114m\ue0b0\033[0m",
+                                 "\033[1;38;5;114m[\033[0m\033[38;5;120m%s %s\033[0m\033[1;38;5;114m]\033[0m",
                                  sym, branch);
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         } else {
           // Optional: visual separator if not in git repo
-          int written =
-              snprintf(&temp[j], MAX_PROMPT - j, "\033[38;5;240m\ue0b0\033[0m");
+          int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                 use_utf8 ? "\033[38;5;240m\ue0b0\033[0m"
+                                          : "-");
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
         }
@@ -182,6 +197,12 @@ void build_prompt(const char *input_template, char *output) {
       temp[j++] = input_template[i];
     }
     i++;
+  }
+  /* Ensure prompt ends with a reset so colors don't bleed even if truncated */
+  if (j < MAX_PROMPT - 5) {
+    int written = snprintf(&temp[j], MAX_PROMPT - j, "\033[0m");
+    if (written > 0)
+      j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
   }
   temp[j] = '\0';
   /* Ensure output is null-terminated and fits */
@@ -242,6 +263,7 @@ int handle_builtin(char **args) {
               "\033[38;5;208m\ue0b0\033[0m\n"
               "╰─\uf061 ",
               MAX_PROMPT - 1);
+      has_prompt_template = false;
     } else if (strcmp(args[1], "chill") == 0) {
       strncpy(current_prompt,
               "╭─\033[48;5;74m\033[38;5;232m \uea85 "
@@ -249,6 +271,7 @@ int handle_builtin(char **args) {
               "\033[38;5;74m\ue0b0\033[0m\n"
               "╰─\uf061 ",
               MAX_PROMPT - 1);
+      has_prompt_template = false;
     } else if (strcmp(args[1], "gamer") == 0) {
       strncpy(current_prompt,
               "╭─\033[48;5;170m\033[38;5;232m \uf11b "
@@ -256,6 +279,7 @@ int handle_builtin(char **args) {
               "\033[38;5;170m\ue0b0\033[0m\n"
               "╰─\uf061 ",
               MAX_PROMPT - 1);
+      has_prompt_template = false;
     } else if (strcmp(args[1], "lofi") == 0) {
       strncpy(current_prompt,
               "╭─\033[48;5;183m\033[38;5;232m \uf001 "
@@ -263,6 +287,7 @@ int handle_builtin(char **args) {
               "\033[38;5;183m\ue0b0\033[0m\n"
               "╰─\uf061 ",
               MAX_PROMPT - 1);
+      has_prompt_template = false;
     } else if (strcmp(args[1], "ghoul") == 0) {
       strncpy(current_prompt,
               "╭─\033[48;5;250m\033[38;5;232m \ueefe "
@@ -270,6 +295,7 @@ int handle_builtin(char **args) {
               "\033[38;5;250m\ue0b0\033[0m\n"
               "╰─\uf061 ",
               MAX_PROMPT - 1);
+      has_prompt_template = false;
     } else {
       printf("Unknown mood: %s\n", args[1]);
     }
@@ -333,7 +359,10 @@ int handle_builtin(char **args) {
     }
     new_prompt[MAX_PROMPT - 1] = '\0';
     replace_escaped_newlines(new_prompt, sizeof(new_prompt));
-    build_prompt(new_prompt, current_prompt);
+    strncpy(current_prompt_template, new_prompt, MAX_PROMPT - 1);
+    current_prompt_template[MAX_PROMPT - 1] = '\0';
+    has_prompt_template = true;
+    build_prompt(current_prompt_template, current_prompt);
     return 1; // handled
   }
 
@@ -418,6 +447,9 @@ int main(void) {
 
   while (1) {
     pos = 0;
+    if (has_prompt_template) {
+      build_prompt(current_prompt_template, current_prompt);
+    }
     memset(input, 0, sizeof(input));
     printf("%s", current_prompt);
     fflush(stdout);
