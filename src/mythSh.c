@@ -31,7 +31,7 @@
 #define MAX_PROMPT 1024
 #define MAX_HISTORY 1000
 #define HISTORY_FILE ".mythsh_history"
-
+char theme[16] = "mini";
 
 struct termios orig_term;
 
@@ -40,7 +40,8 @@ int history_count = 0;
 int history_index = 0;
 
 char current_prompt[MAX_PROMPT] = "mythsh> "; // default prompt
-char current_prompt_template[MAX_PROMPT] = ""; // empty means no dynamic template
+char current_prompt_template[MAX_PROMPT] =
+    ""; // empty means no dynamic template
 bool has_prompt_template = false;
 
 /* Simple tokenization on whitespace. Note: this does NOT support quoted args.
@@ -103,7 +104,7 @@ void get_git_branch(char *branch, size_t size) {
 }
 
 static bool is_utf8_locale(void) {
-  const char *vars[] = { getenv("LC_ALL"), getenv("LC_CTYPE"), getenv("LANG") };
+  const char *vars[] = {getenv("LC_ALL"), getenv("LC_CTYPE"), getenv("LANG")};
   for (size_t i = 0; i < sizeof(vars) / sizeof(vars[0]); i++) {
     if (vars[i] && (strstr(vars[i], "UTF-8") || strstr(vars[i], "utf8"))) {
       return true;
@@ -114,100 +115,185 @@ static bool is_utf8_locale(void) {
 
 /* Build prompt from a template with %u (user), %h (hostname), %d (cwd). */
 void build_prompt(const char *input_template, char *output) {
-  char temp[MAX_PROMPT];
-  bool use_utf8 = is_utf8_locale();
-  int i = 0, j = 0;
+  if (strcmp(theme, "graphic") == 0) {
+    char temp[MAX_PROMPT];
+    int i = 0, j = 0;
 
-  while (input_template[i] != '\0' && j < MAX_PROMPT - 1) {
-    if (input_template[i] == '%' && input_template[i + 1] != '\0') {
-      i++;
-      if (input_template[i] == 'u') {
-        struct passwd *pw = getpwuid(getuid());
-        const char *sym = use_utf8 ? "\uf007" : "usr";
-        const char *name = (pw && pw->pw_name) ? pw->pw_name : "unknown";
-        int written = snprintf(&temp[j], MAX_PROMPT - j,
-                               "\033[1;38;5;81m[\033[0m\033[38;5;117m%s "
-                               "%s\033[0m\033[1;38;5;81m]\033[0m ",
-                               sym, name);
-        if (written > 0)
-          j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
-      } else if (input_template[i] == 'h') {
-        char hostname[HOST_NAME_MAX];
-        const char *sym = use_utf8 ? "\uf233" : "host";
-        if (gethostname(hostname, sizeof(hostname)) == 0) {
-          hostname[sizeof(hostname) - 1] = '\0';
+    while (input_template[i] != '\0' && j < MAX_PROMPT - 1) {
+      if (input_template[i] == '%' && input_template[i + 1] != '\0') {
+        i++;
+        if (input_template[i] == 'u') {
+          struct passwd *pw = getpwuid(getuid());
+          const char *name = (pw && pw->pw_name) ? pw->pw_name : "unknown";
           int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                 "\033[1;38;5;214m[\033[0m\033[38;5;222m%s "
-                                 "%s\033[0m\033[1;38;5;214m]\033[0m",
-                                 sym,hostname);
+                                 "\033[48;5;74m\033[38;5;232m %s "
+                                 "\033[0m\033[38;5;74m\ue0b0\033[0m",
+                                 name);
           if (written > 0)
             j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+        } else if (input_template[i] == 'h') {
+          char hostname[HOST_NAME_MAX];
+          if (gethostname(hostname, sizeof(hostname)) == 0) {
+            hostname[sizeof(hostname) - 1] = '\0';
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   "\033[48;5;208m\033[38;5;232m %s "
+                                   "\033[0m\033[38;5;208m\ue0b0\033[0m",
+                                   hostname);
+            if (written > 0)
+              j +=
+                  (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          } else {
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   "\033[48;5;208m\033[38;5;232m %s "
+                                   "\033[0m\033[38;5;208m\ue0b0\033[0m",
+                                   "host");
+            if (written > 0)
+              j +=
+                  (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          }
+        } else if (input_template[i] == 'd') {
+          char cwd[PATH_MAX];
+          if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   "\033[48;5;183m\033[38;5;232m %s "
+                                   "\033[0m\033[38;5;183m\ue0b0\033[0m",
+                                   cwd);
+            if (written > 0)
+              j +=
+                  (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          } else {
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   "\033[48;5;183m\033[38;5;232m %s "
+                                   "\033[0m\033[38;5;183m\ue0b0\033[0m",
+                                   ".");
+            if (written > 0)
+              j +=
+                  (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          }
         } else {
-          int written = snprintf(
-              &temp[j], MAX_PROMPT - j,
-              "\033[1;38;5;214m[\033[0m\033[38;5;222m%s %s\033[0m\033[1;38;5;214m]\033[0m",
-              sym, "host");
-          if (written > 0)
-            j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
-        }
-      } else if (input_template[i] == 'd') {
-        char cwd[PATH_MAX];
-        const char *sym = use_utf8 ? "\uf07c" : "dir";
-        if (getcwd(cwd, sizeof(cwd)) != NULL) {
-          int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                 "\033[1;38;5;213m[\033[0m\033[38;5;219m%s %s\033[0m\033[1;38;5;213m]\033[0m",
-                                 sym, cwd);
-          if (written > 0)
-            j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
-        } else {
-          int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                 "\033[1;38;5;213m[\033[0m\033[38;5;219m%s %s\033[0m\033[1;38;5;213m]\033[0m",
-                                 sym, ".");
-          if (written > 0)
-            j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
-        }
-      } else if (input_template[i] == 'g') {
-        const char *sym = use_utf8 ? "\ue725" : "git";
-        char branch[64] = "";
-        if (is_git_repo()) {
-          get_git_branch(branch, sizeof(branch));
-          int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                 "\033[1;38;5;114m[\033[0m\033[38;5;120m%s %s\033[0m\033[1;38;5;114m]\033[0m",
-                                 sym, branch);
-          if (written > 0)
-            j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
-        } else {
-          // Optional: visual separator if not in git repo
-          int written = snprintf(&temp[j], MAX_PROMPT - j,
-                                 use_utf8 ? "\033[38;5;240m\ue0b0\033[0m"
-                                          : "-");
-          if (written > 0)
-            j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          /* Unknown directive: emit %<char> literally */
+          if (j < MAX_PROMPT - 2) {
+            temp[j++] = '%';
+            temp[j++] = input_template[i];
+          } else if (j < MAX_PROMPT - 1) {
+            temp[j++] = '%';
+          }
         }
       } else {
-        /* Unknown directive: emit %<char> literally */
-        if (j < MAX_PROMPT - 2) {
-          temp[j++] = '%';
-          temp[j++] = input_template[i];
-        } else if (j < MAX_PROMPT - 1) {
-          temp[j++] = '%';
-        }
+        temp[j++] = input_template[i];
       }
-    } else {
-      temp[j++] = input_template[i];
+      i++;
     }
-    i++;
+    temp[j] = '\0';
+    /* Ensure output is null-terminated and fits */
+    strncpy(output, temp, MAX_PROMPT - 1);
+    output[MAX_PROMPT - 1] = '\0';
+  } else {
+    char temp[MAX_PROMPT];
+    bool use_utf8 = is_utf8_locale();
+    int i = 0, j = 0;
+
+    while (input_template[i] != '\0' && j < MAX_PROMPT - 1) {
+      if (input_template[i] == '%' && input_template[i + 1] != '\0') {
+        i++;
+        if (input_template[i] == 'u') {
+          struct passwd *pw = getpwuid(getuid());
+          const char *sym = use_utf8 ? "\uf007" : "usr";
+          const char *name = (pw && pw->pw_name) ? pw->pw_name : "unknown";
+          int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                 "\033[1;38;5;81m[\033[0m\033[38;5;117m%s "
+                                 "%s\033[0m\033[1;38;5;81m]\033[0m ",
+                                 sym, name);
+          if (written > 0)
+            j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+        } else if (input_template[i] == 'h') {
+          char hostname[HOST_NAME_MAX];
+          const char *sym = use_utf8 ? "\uf233" : "host";
+          if (gethostname(hostname, sizeof(hostname)) == 0) {
+            hostname[sizeof(hostname) - 1] = '\0';
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   "\033[1;38;5;214m[\033[0m\033[38;5;222m%s "
+                                   "%s\033[0m\033[1;38;5;214m]\033[0m",
+                                   sym, hostname);
+            if (written > 0)
+              j +=
+                  (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          } else {
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   "\033[1;38;5;214m[\033[0m\033[38;5;222m%s "
+                                   "%s\033[0m\033[1;38;5;214m]\033[0m",
+                                   sym, "host");
+            if (written > 0)
+              j +=
+                  (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          }
+        } else if (input_template[i] == 'd') {
+          char cwd[PATH_MAX];
+          const char *sym = use_utf8 ? "\uf07c" : "dir";
+          if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   "\033[1;38;5;213m[\033[0m\033[38;5;219m%s "
+                                   "%s\033[0m\033[1;38;5;213m]\033[0m",
+                                   sym, cwd);
+            if (written > 0)
+              j +=
+                  (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          } else {
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   "\033[1;38;5;213m[\033[0m\033[38;5;219m%s "
+                                   "%s\033[0m\033[1;38;5;213m]\033[0m",
+                                   sym, ".");
+            if (written > 0)
+              j +=
+                  (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          }
+        } else if (input_template[i] == 'g') {
+          const char *sym = use_utf8 ? "\ue725" : "git";
+          char branch[64] = "";
+          if (is_git_repo()) {
+            get_git_branch(branch, sizeof(branch));
+            int written = snprintf(&temp[j], MAX_PROMPT - j,
+                                   "\033[1;38;5;114m[\033[0m\033[38;5;120m%s "
+                                   "%s\033[0m\033[1;38;5;114m]\033[0m",
+                                   sym, branch);
+            if (written > 0)
+              j +=
+                  (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          } else {
+            // Optional: visual separator if not in git repo
+            int written =
+                snprintf(&temp[j], MAX_PROMPT - j,
+                         use_utf8 ? "\033[38;5;240m\ue0b0\033[0m" : "-");
+            if (written > 0)
+              j +=
+                  (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+          }
+        } else {
+          /* Unknown directive: emit %<char> literally */
+          if (j < MAX_PROMPT - 2) {
+            temp[j++] = '%';
+            temp[j++] = input_template[i];
+          } else if (j < MAX_PROMPT - 1) {
+            temp[j++] = '%';
+          }
+        }
+      } else {
+        temp[j++] = input_template[i];
+      }
+      i++;
+    }
+    /* Ensure prompt ends with a reset so colors don't bleed even if truncated
+     */
+    if (j < MAX_PROMPT - 5) {
+      int written = snprintf(&temp[j], MAX_PROMPT - j, "\033[0m");
+      if (written > 0)
+        j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
+    }
+    temp[j] = '\0';
+    /* Ensure output is null-terminated and fits */
+    strncpy(output, temp, MAX_PROMPT - 1);
+    output[MAX_PROMPT - 1] = '\0';
   }
-  /* Ensure prompt ends with a reset so colors don't bleed even if truncated */
-  if (j < MAX_PROMPT - 5) {
-    int written = snprintf(&temp[j], MAX_PROMPT - j, "\033[0m");
-    if (written > 0)
-      j += (written < (MAX_PROMPT - j) ? written : (MAX_PROMPT - j - 1));
-  }
-  temp[j] = '\0';
-  /* Ensure output is null-terminated and fits */
-  strncpy(output, temp, MAX_PROMPT - 1);
-  output[MAX_PROMPT - 1] = '\0';
 }
 
 /* Replace literal backslash-n sequences ("\\n") with actual newline characters.
@@ -366,6 +452,12 @@ int handle_builtin(char **args) {
     return 1; // handled
   }
 
+  if (strcmp(args[0], "theme") == 0 && args[1] != NULL) {
+    strncpy(theme, args[1], sizeof(theme) - 1);
+    theme[sizeof(theme) - 1] = '\0';
+    return 1;
+  }
+
   return 0;
 }
 
@@ -493,8 +585,9 @@ int main(void) {
               // Reprint prompt and history
               printf("\r%s%s", current_prompt, history[history_index]);
               fflush(stdout);
-              strcpy(input, history[history_index]);
-              pos = strlen(input);
+              strncpy(input, history[history_index], sizeof(input) - 1);
+              input[sizeof(input) - 1] = '\0';
+              pos = (int)strnlen(input, sizeof(input));
             }
           } else if (dir == 'B') { // DOWN
             if (history_index < history_count - 1) {
@@ -517,8 +610,9 @@ int main(void) {
               // Reprint prompt and history
               printf("\r%s%s", current_prompt, history[history_index]);
               fflush(stdout);
-              strcpy(input, history[history_index]);
-              pos = strlen(input);
+              strncpy(input, history[history_index], sizeof(input) - 1);
+              input[sizeof(input) - 1] = '\0';
+              pos = (int)strnlen(input, sizeof(input));
             } else {
               // Clear current line first
               printf("\r\033[K");
@@ -545,9 +639,14 @@ int main(void) {
           }
         }
       } else { // normal character
-        input[pos++] = c;
-        putchar(c);
-        fflush(stdout);
+        if (pos < (int)sizeof(input) - 1) {
+          input[pos++] = c;
+          putchar(c);
+          fflush(stdout);
+        } else {
+          putchar('\a');
+          fflush(stdout);
+        }
       }
     }
 
