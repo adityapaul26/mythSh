@@ -53,7 +53,7 @@ You can copy this directly into your `README.md`.
 You can install **MythSH** with a single command using **curl**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<yourusername>/mythsh/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/adityapaul26/mythsh/main/install.sh | bash
 ```
 
 This script will:
@@ -176,6 +176,13 @@ Example:
 ```bash
 # .mythrc
 setprompt ╭─%u%h%d%g\n╰─>
+
+# powerlevel10k-like -> graphic
+# minimalist -> mini
+# uncomment the one u want to use
+# theme graphic
+theme mini
+
 ```
 
 Reload MythSh to apply changes:
@@ -271,6 +278,3 @@ If you’d like to add new prompt themes, icons, or internal commands:
 MIT License © 2025 adityapaul26
 
 Feel free to use, modify, and share — with attribution.
-
-
-
