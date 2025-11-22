@@ -40,14 +40,6 @@ $ (echo exit | ./mythsh)
 
 ---
 
-## 🛠️ Installation
-
-Perfect 😎 — here’s a **clean, professional** `README.md` section for your **MythSH** project that covers both **installation** and **uninstallation** clearly, just like popular open-source tools (e.g., `Starship`, `oh-my-zsh`, etc.).
-
-You can copy this directly into your `README.md`.
-
----
-
 ## ⚙️ Installation
 
 You can install **MythSH** with a single command using **curl**:
